@@ -78,7 +78,7 @@ def main(mod_api, nsfw_api, report_api, dev, token):
 
         did_categories.append({'category': category, 'did': did})
 
-    response = s(nsfw_api, json={'categories': did_categories, 'move': True})
+    response = s.post(nsfw_api, json={'categories': did_categories, 'move': True})
     response.raise_for_status()
     data = response.json()
     print(f'send mod result, {data["message"]}')
