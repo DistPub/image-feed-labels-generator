@@ -1,4 +1,6 @@
 import sqlite3
+from argparse import ArgumentParser
+import os
 
 import requests
 
@@ -15,7 +17,18 @@ def fetch_list(aturl, cursor = None):
     return dids
 
 
-def main():
+def git_commit():
+    os.system('git config --global user.email "xiaopengyou@live.com"')
+    os.system('git config --global user.name "robot auto"')
+    os.system('git add .')
+    os.system('git commit -m "update not.db"')
+
+
+def git_push():
+    os.system('git push')
+
+
+def main(dev):
     # 连接到数据库（如果不存在则创建）
     conn = sqlite3.connect("not.db")
 
@@ -59,5 +72,13 @@ def main():
     cursor.close()
     conn.close()
 
+    if not dev:
+        git_commit()
+        git_push()
+
+
 if __name__ == '__main__':
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("--dev", action="store_true")
+    args = parser.parse_args()
+    main(args.dev)
