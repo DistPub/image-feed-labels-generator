@@ -4,6 +4,17 @@ from argparse import ArgumentParser
 import io
 
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+
+s = requests.Session()
+retries = Retry(
+    total=3,  # 总重试次数
+    backoff_factor=1,  # 间隔时间因子，用于计算重试间隔时间
+    allowed_methods=["GET", "POST"]  # 允许重试的方法
+)
+s.mount('http://', HTTPAdapter(max_retries=retries))
 
 
 def action_in_progress(token):
@@ -28,7 +39,8 @@ def main(mod_api, nsfw_api, report_api, dev, token):
         print(f'action in progress, skip')
         return
 
-    response = requests.get(mod_api)
+    response = s.get(mod_api)
+    response.raise_for_status()
     posts = response.json()
 
     if not posts['mod']:
@@ -66,8 +78,8 @@ def main(mod_api, nsfw_api, report_api, dev, token):
 
         did_categories.append({'category': category, 'did': did})
 
-    response = requests.post(nsfw_api, json={'categories': did_categories, 'move': True})
-    assert response.status_code == 200, f'status code: {response.status_code}'
+    response = s(nsfw_api, json={'categories': did_categories, 'move': True})
+    response.raise_for_status()
     data = response.json()
     print(f'send mod result, {data["message"]}')
 
