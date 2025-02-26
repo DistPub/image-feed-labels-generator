@@ -14,11 +14,11 @@ def action_in_progress(token):
     data = response.json()
     if data['total_count'] < 2:
         return False
-    
+
     runs = [item for item in data['workflow_runs'] if item['path'].endswith(path)]
     if len(runs) < 2:
         return False
-        
+
     return True
 
 
@@ -46,7 +46,7 @@ def git_push():
 
 
 def main(dev, token):
-    if action_in_progress(token):
+    if not dev and action_in_progress(token):
         print(f'action in progress, skip')
         return
 
@@ -91,7 +91,7 @@ def main(dev, token):
 
     cursor.executemany('''INSERT INTO not_good_user (did) VALUES (?)''', [(item,) for item in not_good_users])
     conn.commit()
-    
+
     # 关闭数据库
     cursor.close()
     conn.close()

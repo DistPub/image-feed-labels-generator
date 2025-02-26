@@ -26,16 +26,16 @@ def action_in_progress(token):
     data = response.json()
     if data['total_count'] < 2:
         return False
-    
+
     runs = [item for item in data['workflow_runs'] if item['path'].endswith(path)]
     if len(runs) < 2:
         return False
-        
+
     return True
 
 
 def main(mod_api, nsfw_api, report_api, dev, token):
-    if action_in_progress(token):
+    if not dev and action_in_progress(token):
         print(f'action in progress, skip')
         return
 
@@ -63,6 +63,8 @@ def main(mod_api, nsfw_api, report_api, dev, token):
 
         for img in imgs:
             try:
+                if dev:
+                    img = img.replace('://', '://go.smitechow.com/')
                 response = requests.get(img)
                 response.raise_for_status()
 
