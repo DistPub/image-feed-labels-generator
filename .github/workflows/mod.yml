@@ -16,5 +16,6 @@ jobs:
           mod_api: ${{secrets.MOD_API}}
           nsfw_api: ${{secrets.NSFW_API}}
           report_api: ${{secrets.REPORT_API}}
+          token: ${{ secrets.GH_PAT || github.token }}
         run: >
-          python main.py --get-mod-api "$mod_api" --update-nsfw-api "$nsfw_api" --get-report-nsfw-api "$report_api"
+          python main.py --get-mod-api "$mod_api" --update-nsfw-api "$nsfw_api" --get-report-nsfw-api "$report_api" --gh-token "$token" --dev

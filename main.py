@@ -6,7 +6,28 @@ import io
 import requests
 
 
-def main(mod_api, nsfw_api, report_api, dev):
+def action_in_progress(token):
+    url = 'https://api.github.com/repos/DistPub/image-feed-labels-generator/actions/runs'
+    path = 'mod.yml'
+    response = requests.get(url, headers={
+        'Authorization': f'token {token}'
+    }, params={'status': 'in_progress'})
+    data = response.json()
+    if data['total_count'] < 2:
+        return False
+    
+    runs = [item for item in data['workflow_runs'] if item['path'].endswith(path)]
+    if len(runs) < 2:
+        return False
+        
+    return True
+
+
+def main(mod_api, nsfw_api, report_api, dev, token):
+    if action_in_progress(token):
+        print(f'action in progress, skip')
+        return
+
     response = requests.get(mod_api)
     posts = response.json()
 
@@ -65,5 +86,6 @@ if __name__ == '__main__':
     parser.add_argument("--update-nsfw-api", help="update nsfw category endpoint", default='http://localhost:3000/xrpc/com.hukoubook.fg.updateNSFW')
     parser.add_argument("--get-report-nsfw-api", help="get report nsfw endpoint", default='n/a')
     parser.add_argument("--dev", action="store_true")
+    parser.add_argument("--gh-token", help="gh token")
     args = parser.parse_args()
-    main(args.get_mod_api, args.update_nsfw_api, args.get_report_nsfw_api, args.dev)
+    main(args.get_mod_api, args.update_nsfw_api, args.get_report_nsfw_api, args.dev, args.gh_token)

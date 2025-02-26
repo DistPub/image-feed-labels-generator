@@ -5,6 +5,23 @@ import os
 import requests
 
 
+def action_in_progress(token):
+    url = 'https://api.github.com/repos/DistPub/image-feed-labels-generator/actions/runs'
+    path = 'notdb_gen.yml'
+    response = requests.get(url, headers={
+        'Authorization': f'token {token}'
+    }, params={'status': 'in_progress'})
+    data = response.json()
+    if data['total_count'] < 2:
+        return False
+    
+    runs = [item for item in data['workflow_runs'] if item['path'].endswith(path)]
+    if len(runs) < 2:
+        return False
+        
+    return True
+
+
 def fetch_list(aturl, cursor = None):
     url = f'https://public.api.bsky.app/xrpc/app.bsky.graph.getList'
     response = requests.get(url, params={'list': aturl, 'limit': 100, 'cursor': cursor})
@@ -28,7 +45,11 @@ def git_push():
     os.system('git push')
 
 
-def main(dev):
+def main(dev, token):
+    if action_in_progress(token):
+        print(f'action in progress, skip')
+        return
+
     # 连接到数据库（如果不存在则创建）
     conn = sqlite3.connect("not.db")
 
@@ -50,6 +71,7 @@ def main(dev):
     # fetch pastebin for not chinese website
     response = requests.get('https://pastebin.smitechow.com/~notcnweb')
     data = response.json()
+    print(f'update not chinese website {len(data)}')
     cursor.executemany('''INSERT INTO not_chinese_website (hostname) VALUES (?)''', [(item,) for item in data])
     conn.commit()
 
@@ -65,12 +87,15 @@ def main(dev):
     not_good_users = []
     for list_key in list_keys:
         not_good_users.extend(fetch_list(list_key))
+    print(f'update not good user {len(not_good_users)}')
 
     cursor.executemany('''INSERT INTO not_good_user (did) VALUES (?)''', [(item,) for item in not_good_users])
+    conn.commit()
     
     # 关闭数据库
     cursor.close()
     conn.close()
+    print(f'not.db updated')
 
     if not dev:
         git_commit()
@@ -80,5 +105,6 @@ def main(dev):
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--dev", action="store_true")
+    parser.add_argument("--gh-token", help="gh token")
     args = parser.parse_args()
-    main(args.dev)
+    main(args.dev, args.gh_token)

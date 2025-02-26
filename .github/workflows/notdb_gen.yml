@@ -12,5 +12,7 @@ jobs:
           token: ${{ secrets.GH_PAT || github.token }}
       - run: pip install requests
       - shell: bash
+        env:
+          token: ${{ secrets.GH_PAT || github.token }}
         run: >
-          python notdb.py
+          python notdb.py --gh-token "$token" --dev
