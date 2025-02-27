@@ -12,6 +12,7 @@ s = requests.Session()
 retries = Retry(
     total=3,  # 总重试次数
     backoff_factor=1,  # 间隔时间因子，用于计算重试间隔时间
+    status_forcelist=[502],
     allowed_methods=["GET", "POST"]  # 允许重试的方法
 )
 s.mount('http://', HTTPAdapter(max_retries=retries))
