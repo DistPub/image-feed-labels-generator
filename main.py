@@ -16,6 +16,7 @@ retries = Retry(
     allowed_methods=["GET", "POST"]  # 允许重试的方法
 )
 s.mount('http://', HTTPAdapter(max_retries=retries))
+s.mount('https://', HTTPAdapter(max_retries=retries))
 
 
 def action_in_progress(token):
