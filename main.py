@@ -45,12 +45,26 @@ def main(mod_api, nsfw_api, report_api, dev, token):
     response.raise_for_status()
     posts = response.json()
 
-    if not posts['mod']:
-        print(f'no post mod')
-        return
+    try:
+        if posts['mod']:
+            send_categories(handle_mod(posts['mod'], dev), nsfw_api)
+        else:
+            print(f'no post in mod')
+    except Exception as error:
+        print(f'handle post in mod error: {error}')
 
+    try:
+        if posts['report']:
+            send_categories(handle_mod(posts['report'], dev), nsfw_api, move = False)
+        else:
+            print(f'no post in report')
+    except Exception as error:
+        print(f'handle post in report error: {error}')
+
+
+def handle_mod(mod_posts, dev):
     did_images = {}
-    for post in posts['mod']:
+    for post in mod_posts:
         # only handle 3 author when dev
         if dev and len(did_images) >=3:
             break
@@ -81,8 +95,11 @@ def main(mod_api, nsfw_api, report_api, dev, token):
                 continue
 
         did_categories.append({'category': category, 'did': did})
+    return did_categories
 
-    response = s.post(nsfw_api, json={'categories': did_categories, 'move': True})
+
+def send_categories(data, nsfw_api, move = True):
+    response = s.post(nsfw_api, json={'categories': data, 'move': move})
     response.raise_for_status()
     data = response.json()
     print(f'send mod result, {data["message"]}')
