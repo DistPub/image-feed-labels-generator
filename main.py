@@ -70,7 +70,20 @@ def handle_mod(mod_posts, dev):
             break
         author = post['author']
         did_images.setdefault(author, [])
-        did_images[author].extend(post['imgUrls'].split(','))
+
+        ref_author = post.get('refAuthor')
+        if ref_author:
+            did_images.setdefault(ref_author, [])
+
+        urls = post['imgUrls']
+        if ';' not in urls:
+            urls += ';'
+        groups= post['imgUrls'].split(';')
+        
+        did_images[author].extend([x for x in groups[0].split(',') if x])
+
+        if ref_author:
+            did_images[ref_author].extend([x for x in groups[1].split(',') if x])
 
     did_categories = []
     for did, imgs in did_images.items():
