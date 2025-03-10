@@ -55,25 +55,20 @@ def main(dev, token):
 
     # 创建一个游标对象，用于执行 SQL 语句
     cursor = conn.cursor()
-    cursor.execute('''DROP TABLE IF EXISTS not_chinese_website''')
-    cursor.execute('''DROP TABLE IF EXISTS not_good_user''')
-    # 创建一个表
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS not_chinese_website (
-        hostname STRING PRIMARY KEY
-    )''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS not_good_user (
-        did STRING PRIMARY KEY
-    )
-    ''')
+
+    # get old
+    cursor.execute("SELECT did FROM not_good_user")
+    did_rows = cursor.fetchall()
+    cursor.execute("SELECT hostname FROM not_chinese_website")
+    hostname_rows = cursor.fetchall()
 
     # fetch pastebin for not chinese website
     response = requests.get('https://pastebin.smitechow.com/~notcnweb')
     data = response.json()
-    print(f'update not chinese website {len(data)}')
-    cursor.executemany('''INSERT INTO not_chinese_website (hostname) VALUES (?)''', [(item,) for item in data])
-    conn.commit()
+    new_hostname_rows = [(x,) for x in data]
+
+    add_hostname = set(new_hostname_rows) - set(hostname_rows)
+    removed_hostname = set(hostname_rows) - set(new_hostname_rows)
 
     # fetch @smitechow.com list for not good user
     list_keys = [
@@ -87,9 +82,35 @@ def main(dev, token):
     not_good_users = []
     for list_key in list_keys:
         not_good_users.extend(fetch_list(list_key))
-    print(f'update not good user {len(not_good_users)}')
+    new_did_rows = [(x,) for x in not_good_users]
 
-    cursor.executemany('''INSERT INTO not_good_user (did) VALUES (?)''', [(item,) for item in not_good_users])
+    add_did = set(new_did_rows) - set(did_rows)
+    removed_did = set(did_rows) - set(new_did_rows)
+
+    if not add_hostname and not removed_hostname and not add_did and not removed_did:
+        print(f'not changed, skip update not.db')
+        cursor.close()
+        conn.close()
+        return
+
+    cursor.execute('''DROP TABLE IF EXISTS not_chinese_website''')
+    cursor.execute('''DROP TABLE IF EXISTS not_good_user''')
+    # 创建一个表
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS not_chinese_website (
+        hostname STRING PRIMARY KEY
+    )''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS not_good_user (
+        did STRING PRIMARY KEY
+    )
+    ''')
+    print(f'update not chinese website {len(data)}')
+    cursor.executemany('''INSERT INTO not_chinese_website (hostname) VALUES (?)''', new_hostname_rows)
+    conn.commit()
+
+    print(f'update not good user {len(not_good_users)}')
+    cursor.executemany('''INSERT INTO not_good_user (did) VALUES (?)''', new_did_rows)
     conn.commit()
 
     # 关闭数据库
