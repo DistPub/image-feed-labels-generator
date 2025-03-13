@@ -29,7 +29,7 @@ def action_in_progress(token):
     if data['total_count'] < 2:
         return False
 
-    runs = [item for item in data['workflow_runs'] if item['path'].endswith(path)]
+    runs = [item for item in data['workflow_runs'] if item['path'].endswith(path) and item['status'] != 'completed']
     if len(runs) < 2:
         return False
 
