@@ -26,10 +26,8 @@ def action_in_progress(token):
         'Authorization': f'token {token}'
     }, params={'status': 'in_progress'})
     data = response.json()
-    if data['total_count'] < 2:
-        return False
-
-    runs = [item for item in data['workflow_runs'] if item['path'].endswith(path) and item['status'] != 'completed']
+    status_mismatch_ids = []
+    runs = [item for item in data['workflow_runs'] if item['path'].endswith(path) and item['id'] not in status_mismatch_ids]
     if len(runs) < 2:
         return False
 
