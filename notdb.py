@@ -23,14 +23,17 @@ def action_in_progress(token):
     return True
 
 
-def fetch_list(aturl, cursor = None):
-    url = f'https://public.api.bsky.app/xrpc/app.bsky.graph.getList'
-    response = requests.get(url, params={'list': aturl, 'limit': 100, 'cursor': cursor})
+def fetch_list(cursor = None):
+    """
+    smite's list now only contains the not-good user, so direct scan all records
+    """
+    url = f'https://network.hukoubook.com/xrpc/com.atproto.repo.listRecords'
+    response = requests.get(url, params={'repo': 'did:web:smite.hukoubook.com', 'collection': 'app.bsky.graph.listitem', 'limit': 100, 'cursor': cursor})
     data = response.json()
-    dids = [item['subject']['did'] for item in data['items']]
+    dids = [item['value']['subject'] for item in data['records']]
     cursor = data.get('cursor')
     if cursor:
-        dids.extend(fetch_list(aturl, cursor))
+        dids.extend(fetch_list(cursor))
 
     return dids
 
@@ -72,17 +75,7 @@ def main(dev, token):
     removed_hostname = set(hostname_rows) - set(new_hostname_rows)
 
     # fetch @smitechow.com list for not good user
-    list_keys = [
-        'at://did:web:smite.hukoubook.com/app.bsky.graph.list/3li4glzdchy2r', # 成功暴富爱好者
-        'at://did:web:smite.hukoubook.com/app.bsky.graph.list/3li4d2wvyny2r', # 黄赌毒从业者
-        'at://did:web:smite.hukoubook.com/app.bsky.graph.list/3li4bgpci5i2r', # 玄学爱好者
-        'at://did:web:smite.hukoubook.com/app.bsky.graph.list/3li4b326e5y2r', # 键政爱好者
-        'at://did:web:smite.hukoubook.com/app.bsky.graph.list/3lbfa5esptk2s', # 高音喇叭
-    ]
-
-    not_good_users = []
-    for list_key in list_keys:
-        not_good_users.extend(fetch_list(list_key))
+    not_good_users = fetch_list()
     new_did_rows = [(x,) for x in not_good_users]
 
     add_did = set(new_did_rows) - set(did_rows)
