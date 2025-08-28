@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 import sqlite3
 from argparse import ArgumentParser
 import os
@@ -23,6 +24,29 @@ def action_in_progress(token):
     return True
 
 
+def chunked(data, size):
+    for start in range(0, len(data), size):
+        yield data[start:min(start+size, len(data))]
+
+
+def fetch_profiles(dids):
+    response = requests.get('https://public.api.bsky.app/xrpc/app.bsky.actor.getProfiles', params={'actors': dids}, headers={'atproto-accept-labelers': 'did:web:cgv.hukoubook.com'})
+    data = response.json()
+    return data['profiles']
+
+
+def compute_deactive_label(dt):
+    now_utc = datetime.now(timezone.utc)
+    delta = timedelta(days=30)
+    if (now_utc - dt) > delta:
+        return '30d-deactive'
+    return 'active'
+
+def get_rkey(fs):
+    rs = fs.split('app.bsky.graph.listitem/')
+    return rs[-1]
+
+
 def fetch_list(cursor = None):
     """
     smite's list now only contains the not-good user, so direct scan all records
@@ -30,12 +54,32 @@ def fetch_list(cursor = None):
     url = f'https://network.hukoubook.com/xrpc/com.atproto.repo.listRecords'
     response = requests.get(url, params={'repo': 'did:web:smite.hukoubook.com', 'collection': 'app.bsky.graph.listitem', 'limit': 100, 'cursor': cursor})
     data = response.json()
-    dids = [item['value']['subject'] for item in data['records']]
+    dids = []
+    rkeys = {}
+    for item in data['records']:
+        did = item['value']['subject']
+        dids.append(did)
+        rkeys[did] = get_rkey(item['uri'])
+
+    profiles = []
+    for pdids in chunked(dids, 25):
+        profiles.extend(fetch_profiles(pdids))
+    
+    labels = {}
+    for profile in profiles:
+        labels[profile['did']] = [item['val'] for item in profile['labels']]
+        label_time = [datetime.strptime(item['cts'], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc) for item in profile['labels']]
+        label_time.append(datetime.strptime(profile['createdAt'], '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc))
+        labels[profile['did']].append(compute_deactive_label(max(label_time)))
+
     cursor = data.get('cursor')
     if cursor:
-        dids.extend(fetch_list(cursor))
+        rs = fetch_list(cursor)
+        dids.extend(rs[0])
+        labels.update(rs[1])
+        rkeys.update(rs[2])
 
-    return dids
+    return dids, labels, rkeys
 
 
 def git_commit():
@@ -49,7 +93,7 @@ def git_push():
     os.system('git push')
 
 
-def main(dev, token):
+def main(dev, token, password):
     if not dev and action_in_progress(token):
         print(f'action in progress, skip')
         return
@@ -75,7 +119,39 @@ def main(dev, token):
     removed_hostname = set(hostname_rows) - set(new_hostname_rows)
 
     # fetch @smitechow.com list for not good user
-    not_good_users = fetch_list()
+    not_good_users, user_labels, user_records = fetch_list()
+    remove_records = []
+    for did in not_good_users:
+        need_remove = False
+
+        if did not in user_labels:
+            need_remove = True
+
+        elif 'nsfw' in user_labels[did] or '30d-deactive' in user_labels[did]:
+            need_remove = True
+
+        if need_remove:
+            remove_records.append({
+                 '$type': "com.atproto.repo.applyWrites#delete",
+                 'collection': 'app.bsky.graph.listitem',
+                 'rkey': user_records[did]
+            })
+    if remove_records:
+        print(f'need remove {len(remove_records)} did from list')
+        return
+        response = requests.post('https://network.hukoubook.com/xrpc/com.atproto.server.createSession', json={
+            'identifier': 'did:web:smite.hukoubook.com',
+            'password': password
+        })
+        data = response.json()
+        for writes in chunked(remove_records, 200):
+            requests.post('https://network.hukoubook.com/xrpc/com.atproto.repo.applyWrites', json={
+                'repo': 'did:web:smite.hukoubook.com',
+                'writes': writes
+            }, headers={
+                'Authorization': f"Bearer {data['accessJwt']}"
+            })
+
     new_did_rows = [(x,) for x in not_good_users]
 
     add_did = set(new_did_rows) - set(did_rows)
@@ -121,5 +197,6 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--dev", action="store_true")
     parser.add_argument("--gh-token", help="gh token")
+    parser.add_argument("--password", help="password")
     args = parser.parse_args()
-    main(args.dev, args.gh_token)
+    main(args.dev, args.gh_token, args.password)

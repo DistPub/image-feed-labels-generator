@@ -14,5 +14,6 @@ jobs:
       - shell: bash
         env:
           token: ${{ secrets.GH_PAT || github.token }}
+          password: ${{ secrets.PASSWORD }}
         run: >
-          python notdb.py --gh-token "$token"
+          python notdb.py --gh-token "$token" --password "$password"
