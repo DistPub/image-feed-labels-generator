@@ -30,7 +30,7 @@ def chunked(data, size):
 
 
 def fetch_profiles(dids):
-    response = requests.get('https://public.api.bsky.app/xrpc/app.bsky.actor.getProfiles', params={'actors': dids}, headers={'atproto-accept-labelers': 'did:web:cgv.hukoubook.com'})
+    response = requests.get('https://api.bsky.app/xrpc/app.bsky.actor.getProfiles', params={'actors': dids}, headers={'atproto-accept-labelers': 'did:web:cgv.hukoubook.com'})
     data = response.json()
     return data['profiles']
 
@@ -121,13 +121,16 @@ def main(dev, token, password):
     # fetch @smitechow.com list for not good user
     not_good_users, user_labels, user_records = fetch_list()
     remove_records = []
+    cleaned_users = []
     for did in not_good_users:
         need_remove = False
 
         if did not in user_labels:
+            print(f'missing {did}')
             need_remove = True
 
         elif 'nsfw' in user_labels[did] or '30d-deactive' in user_labels[did]:
+            print(f'nsfw or 30d-deactive {did}')
             need_remove = True
 
         if need_remove:
@@ -136,15 +139,17 @@ def main(dev, token, password):
                  'collection': 'app.bsky.graph.listitem',
                  'rkey': user_records[did]
             })
+        else:
+            cleaned_users.append(did)
     if remove_records:
         print(f'need remove {len(remove_records)} did from list')
-        return
         response = requests.post('https://network.hukoubook.com/xrpc/com.atproto.server.createSession', json={
             'identifier': 'did:web:smite.hukoubook.com',
             'password': password
         })
         data = response.json()
         for writes in chunked(remove_records, 200):
+            print(f'remove writes {writes}')
             requests.post('https://network.hukoubook.com/xrpc/com.atproto.repo.applyWrites', json={
                 'repo': 'did:web:smite.hukoubook.com',
                 'writes': writes
@@ -152,7 +157,7 @@ def main(dev, token, password):
                 'Authorization': f"Bearer {data['accessJwt']}"
             })
 
-    new_did_rows = [(x,) for x in not_good_users]
+    new_did_rows = [(x,) for x in cleaned_users]
 
     add_did = set(new_did_rows) - set(did_rows)
     removed_did = set(did_rows) - set(new_did_rows)
@@ -175,11 +180,11 @@ def main(dev, token, password):
         did STRING PRIMARY KEY
     )
     ''')
-    print(f'update not chinese website {len(data)}')
+    print(f'update not chinese website {len(new_hostname_rows)}')
     cursor.executemany('''INSERT INTO not_chinese_website (hostname) VALUES (?)''', new_hostname_rows)
     conn.commit()
 
-    print(f'update not good user {len(not_good_users)}')
+    print(f'update not good user {len(new_did_rows)}')
     cursor.executemany('''INSERT INTO not_good_user (did) VALUES (?)''', new_did_rows)
     conn.commit()
 
