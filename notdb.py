@@ -120,6 +120,7 @@ def main(dev, token, password):
 
     # fetch @smitechow.com list for not good user
     not_good_users, user_labels, user_records = fetch_list()
+    print(f'there are {len(user_records)} not good user')
     remove_records = []
     cleaned_users = []
     for did in not_good_users:
