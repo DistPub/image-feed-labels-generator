@@ -180,6 +180,7 @@ def main(dev, token, password):
 
     cursor.execute('''DROP TABLE IF EXISTS not_chinese_website''')
     cursor.execute('''DROP TABLE IF EXISTS not_good_user''')
+    cursor.execute('''DROP TABLE IF EXISTS not_good_topic''')
     # 创建一个表
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS not_chinese_website (
