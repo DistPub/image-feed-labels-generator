@@ -127,6 +127,12 @@ def main(dev, token, password):
     add_topic = set(new_topic_rows) - set(topic_rows)
     removed_topic = set(topic_rows) - set(new_topic_rows)
 
+    if add_topic:
+        print('new topics added, remove related post')
+        response = requests.post('https://feedg.hukoubook.com/xrpc/com.hukoubook.fg.removeTopicPosts', json={'topics': add_topic})
+        data = response.json()
+        print(data)
+
     # fetch @smitechow.com list for not good user
     not_good_users, user_labels, user_records = fetch_list()
     print(f'there are {len(user_records)} not good user')
