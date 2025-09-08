@@ -129,7 +129,7 @@ def main(dev, token, password):
 
     if add_topic:
         print('new topics added, remove related post')
-        response = requests.post('https://feedg.hukoubook.com/xrpc/com.hukoubook.fg.removeTopicPosts', json={'topics': add_topic})
+        response = requests.post('https://feedg.hukoubook.com/xrpc/com.hukoubook.fg.removeTopicPosts', json={'topics': [x for x, in list(add_topic)]})
         data = response.json()
         print(data)
 
