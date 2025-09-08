@@ -109,6 +109,11 @@ def main(dev, token, password):
     did_rows = cursor.fetchall()
     cursor.execute("SELECT hostname FROM not_chinese_website")
     hostname_rows = cursor.fetchall()
+    try:
+        cursor.execute("SELECT topic FROM not_good_topic")
+        topic_rows = cursor.fetchall()
+    except:
+        topic_rows = []
 
     # fetch pastebin for not chinese website
     response = requests.get('https://pastebin.smitechow.com/~notcnweb')
@@ -117,6 +122,13 @@ def main(dev, token, password):
 
     add_hostname = set(new_hostname_rows) - set(hostname_rows)
     removed_hostname = set(hostname_rows) - set(new_hostname_rows)
+
+    # fetch not good topic
+    response = requests.get('https://pastebin.smitechow.com/~not_good_topics')
+    data = response.text
+    new_topic_rows = [(x,) for x in data.split('\n')]
+    add_topic = set(new_topic_rows) - set(topic_rows)
+    removed_topic = set(topic_rows) - set(new_topic_rows)
 
     # fetch @smitechow.com list for not good user
     not_good_users, user_labels, user_records = fetch_list()
@@ -163,7 +175,7 @@ def main(dev, token, password):
     add_did = set(new_did_rows) - set(did_rows)
     removed_did = set(did_rows) - set(new_did_rows)
 
-    if not add_hostname and not removed_hostname and not add_did and not removed_did:
+    if not add_hostname and not removed_hostname and not add_did and not removed_did and not add_topic and not remove_topic:
         print(f'not changed, skip update not.db')
         cursor.close()
         conn.close()
@@ -181,12 +193,21 @@ def main(dev, token, password):
         did STRING PRIMARY KEY
     )
     ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS not_good_topic (
+        topic STRING PRIMARY KEY
+    )
+    ''')
     print(f'update not chinese website {len(new_hostname_rows)}')
     cursor.executemany('''INSERT INTO not_chinese_website (hostname) VALUES (?)''', new_hostname_rows)
     conn.commit()
 
     print(f'update not good user {len(new_did_rows)}')
     cursor.executemany('''INSERT INTO not_good_user (did) VALUES (?)''', new_did_rows)
+    conn.commit()
+
+    print(f'update not good topic {len(new_topic_rows)}')
+    cursor.executemany('''INSERT INTO not_good_topic (topic) VALUES (?)''', new_topic_rows)
     conn.commit()
 
     # 关闭数据库
