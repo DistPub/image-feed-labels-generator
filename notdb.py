@@ -172,7 +172,7 @@ def main(dev, token, password):
     add_did = set(new_did_rows) - set(did_rows)
     removed_did = set(did_rows) - set(new_did_rows)
 
-    if not add_hostname and not removed_hostname and not add_did and not removed_did and not add_topic and not remove_topic:
+    if not add_hostname and not removed_hostname and not add_did and not removed_did and not add_topic and not removed_topic:
         print(f'not changed, skip update not.db')
         cursor.close()
         conn.close()
