@@ -109,11 +109,8 @@ def main(dev, token, password):
     did_rows = cursor.fetchall()
     cursor.execute("SELECT hostname FROM not_chinese_website")
     hostname_rows = cursor.fetchall()
-    try:
-        cursor.execute("SELECT topic FROM not_good_topic")
-        topic_rows = cursor.fetchall()
-    except:
-        topic_rows = []
+    cursor.execute("SELECT topic FROM not_good_topic")
+    topic_rows = cursor.fetchall()
 
     # fetch pastebin for not chinese website
     response = requests.get('https://pastebin.smitechow.com/~notcnweb')
@@ -126,7 +123,7 @@ def main(dev, token, password):
     # fetch not good topic
     response = requests.get('https://pastebin.smitechow.com/~not_good_topics')
     data = response.text
-    new_topic_rows = [(x,) for x in data.split('\n')]
+    new_topic_rows = [(x.strip(),) for x in data.split('\n')]
     add_topic = set(new_topic_rows) - set(topic_rows)
     removed_topic = set(topic_rows) - set(new_topic_rows)
 
