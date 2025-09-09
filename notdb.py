@@ -123,7 +123,9 @@ def main(dev, token, password):
     # fetch not good topic
     response = requests.get('https://pastebin.smitechow.com/~not_good_topics')
     data = response.text
-    new_topic_rows = [(x.strip(),) for x in data.split('\n')]
+    rows = data.split('\n')
+    rows = [x for x in rows if x.strip()]
+    new_topic_rows = [(x.strip(),) for x in rows]
     add_topic = set(new_topic_rows) - set(topic_rows)
     removed_topic = set(topic_rows) - set(new_topic_rows)
 
