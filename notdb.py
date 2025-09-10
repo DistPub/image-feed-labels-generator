@@ -125,6 +125,7 @@ def main(dev, token, password):
     data = response.text
     rows = data.split('\n')
     rows = [x for x in rows if x.strip()]
+    rows = list(set(rows))
     new_topic_rows = [(x.strip(),) for x in rows]
     add_topic = set(new_topic_rows) - set(topic_rows)
     removed_topic = set(topic_rows) - set(new_topic_rows)
