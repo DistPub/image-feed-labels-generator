@@ -176,7 +176,7 @@ def main(dev, token, password):
                 'Authorization': f"Bearer {data['accessJwt']}"
             })
 
-    new_did_rows = [(x,) for x in cleaned_users]
+    new_did_rows = [(x,) for x in list(set(cleaned_users))]
 
     add_did = set(new_did_rows) - set(did_rows)
     removed_did = set(did_rows) - set(new_did_rows)
