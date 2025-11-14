@@ -30,7 +30,7 @@ def chunked(data, size):
 
 
 def fetch_profiles(dids):
-    response = requests.get('https://api.bsky.app/xrpc/app.bsky.actor.getProfiles', params={'actors': dids}, headers={'atproto-accept-labelers': 'did:web:cgv.hukoubook.com'})
+    response = requests.get('https://fatesky.hukoubook.com/xrpc/app.bsky.actor.getProfiles', params={'actors': dids}, headers={'atproto-accept-labelers': 'did:web:cgv.hukoubook.com'})
     data = response.json()
     return data['profiles']
 
