@@ -120,6 +120,7 @@ def main(dev, token, password):
     # fetch pastebin for not chinese website
     response = requests.get('https://pastebin.smitechow.com/~notcnweb')
     data = response.json()
+    data = list(set(data))
     new_hostname_rows = [(x,) for x in data]
 
     add_hostname = set(new_hostname_rows) - set(hostname_rows)
