@@ -92,7 +92,8 @@ def fetch_list(cursor=None):
         # make no sens, at least should conatin not-good label
         # can be error when fatesky query label
         # refetch
-        if not profile["labels"]:
+        labels = profile["labels"]
+        if not labels:
             refetch = requests.get(
                 "https://fatesky.hukoubook.com/xrpc/app.bsky.actor.getProfile",
                 params={"actor": profile["did"]},
@@ -100,27 +101,19 @@ def fetch_list(cursor=None):
                 timeout=(30, 120),
             )
             data = refetch.json()
-            labels[profile["did"]] = [item["val"] for item in data["labels"]]
-        else:
-            labels[profile["did"]] = [item["val"] for item in profile["labels"]]
+            labels = data["labels"]
+        labels[profile["did"]] = [item["val"] for item in labels]
 
         label_time = [
             datetime.strptime(item["cts"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
                 tzinfo=timezone.utc
             )
-            for item in profile["labels"]
+            for item in labels
         ]
 
-        # still no label, give up
-        # use created time fallback
-        if not label_time:
-            label_time.append(
-                datetime.strptime(
-                    profile["createdAt"], "%Y-%m-%dT%H:%M:%S.%fZ"
-                ).replace(tzinfo=timezone.utc)
-            )
-
-        labels[profile["did"]].append(compute_deactive_label(max(label_time)))
+        # still no label, ignore compute deactive label
+        if label_time:
+            labels[profile["did"]].append(compute_deactive_label(max(label_time)))
 
     cursor = data.get("cursor")
     if cursor:
