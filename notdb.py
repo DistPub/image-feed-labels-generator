@@ -100,8 +100,8 @@ def fetch_list(cursor=None):
                 headers={"atproto-accept-labelers": "did:web:cgv.hukoubook.com"},
                 timeout=(30, 120),
             )
-            data = refetch.json()
-            thelabels = data["labels"]
+            refetchdata = refetch.json()
+            thelabels = refetchdata["labels"]
         labels[profile["did"]] = [item["val"] for item in thelabels]
 
         label_time = [
