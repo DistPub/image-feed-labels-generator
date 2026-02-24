@@ -10,7 +10,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GH_PAT || github.token }}
-      - run: pip install requests
+      - run: pip install requests==2.32.3 tenacity==9.1.4
       - shell: bash
         env:
           token: ${{ secrets.GH_PAT || github.token }}

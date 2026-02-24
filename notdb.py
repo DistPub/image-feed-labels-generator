@@ -2,8 +2,10 @@ import os
 import sqlite3
 from argparse import ArgumentParser
 from datetime import datetime, timedelta, timezone
+import json
 
 import requests
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
 def action_in_progress(token):
@@ -37,6 +39,12 @@ def chunked(data, size):
         yield data[start : min(start + size, len(data))]
 
 
+@retry(
+    stop=stop_after_attempt(3),                    # Stop after 3 attempts
+    wait=wait_exponential(multiplier=1, min=2, max=10),  # Exponential backoff: 2s, 4s, 8s...
+    retry=retry_if_exception_type(json.decoder.JSONDecodeError),  # Only retry on JSON decode errors
+    reraise=True                                   # Raise the original exception after retries exhausted
+)
 def fetch_profiles(dids):
     response = requests.get(
         "https://fatesky.hukoubook.com/xrpc/app.bsky.actor.getProfiles",
