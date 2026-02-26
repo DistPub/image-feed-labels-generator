@@ -68,6 +68,12 @@ def get_rkey(fs):
     return rs[-1]
 
 
+@retry(
+    stop=stop_after_attempt(3),                    # Stop after 3 attempts
+    wait=wait_exponential(multiplier=1, min=2, max=10),  # Exponential backoff: 2s, 4s, 8s...
+    retry=retry_if_exception_type(requests.exceptions.JSONDecodeError),  # Only retry on JSON decode errors
+    reraise=True                                   # Raise the original exception after retries exhausted
+)
 def fetch_list(cursor=None):
     """
     smite's list now only contains the not-good user, so direct scan all records
