@@ -41,7 +41,7 @@ def chunked(data, size):
 @retry(
     stop=stop_after_attempt(3),                    # Stop after 3 attempts
     wait=wait_exponential(multiplier=1, min=2, max=10),  # Exponential backoff: 2s, 4s, 8s...
-    retry=retry_if_exception_type(requests.exceptions.JSONDecodeError),  # Only retry on JSON decode errors
+    retry=retry_if_exception_type((requests.exceptions.JSONDecodeError,requests.exceptions.ConnectionError)),
     reraise=True                                   # Raise the original exception after retries exhausted
 )
 def fetch_profiles(dids):
