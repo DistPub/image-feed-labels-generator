@@ -115,7 +115,7 @@ def fetch_list(cursor=None):
                 timeout=(30, 120),
             )
             refetchdata = refetch.json()
-            thelabels = refetchdata["labels"]
+            thelabels = refetchdata["labels"] if "labels" in refetchdata else []
         labels[profile["did"]] = [item["val"] for item in thelabels]
 
         label_time = [
