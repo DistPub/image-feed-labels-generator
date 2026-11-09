@@ -106,6 +106,7 @@ def fetch_list(cursor=None):
         # can be error when fatesky query label
         # refetch
         thelabels = profile["labels"]
+        print(f'handle profile: {profile["did"]}')
         if not labels:
             refetch = requests.get(
                 "https://fatesky.hukoubook.com/xrpc/app.bsky.actor.getProfile",
